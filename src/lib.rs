@@ -3,15 +3,18 @@ use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 pub fn make_chunks(file: String, chunk_size: usize) -> Vec<String> {
     let mut vec = Vec::new();
 
+    let chunks: Vec<String> = file.split_whitespace().map(|it| it.to_string()).collect();
+
     let mut prev = 0;
     let mut next = 0;
-    for _ in file.as_bytes() {
+
+    while chunks[prev..].len() > 0 {
         if next >= chunk_size {
-            vec.push(file[prev..prev + next].to_string());
+            vec.push(chunks[prev..prev + next].join(" "));
             prev = prev + next;
             next = 0;
-        } else if file[prev..].len() < chunk_size {
-            vec.push(file[prev..].to_string());
+        } else if chunks[prev..].len() < chunk_size {
+            vec.push(chunks[prev..].join(" "));
             break;
         } else {
             next = next + 1;
@@ -51,9 +54,9 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 #[cfg(test)]
 #[test]
 pub fn test_string_chunking() {
-    let st = String::from("Hello how are you doing hope you are doing fine");
+    let st = String::from("Hello how are you doing hope you are doing fine yo");
 
-    let chunks = make_chunks(st, 12);
+    let chunks = make_chunks(st, 5);
 
     for chunk in chunks {
         println!("{}", chunk);
