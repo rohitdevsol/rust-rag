@@ -5,21 +5,37 @@ pub fn make_chunks(file: String, chunk_size: usize) -> Vec<String> {
 
     let chunks: Vec<String> = file.split_whitespace().map(|it| it.to_string()).collect();
 
-    let mut prev = 0;
-    let mut next = 0;
+    // let mut prev = 0;
+    // let mut next = 0;
 
-    while chunks[prev..].len() > 0 {
-        if next >= chunk_size {
-            vec.push(chunks[prev..prev + next].join(" "));
-            prev = prev + next;
-            next = 0;
-        } else if chunks[prev..].len() < chunk_size {
-            vec.push(chunks[prev..].join(" "));
-            break;
-        } else {
-            next = next + 1;
-        }
+    // while chunks[prev..].len() > 0 {
+    //     if next >= chunk_size {
+    //         vec.push(chunks[prev..prev + next].join(" "));
+    //         prev = prev + next;
+    //         next = 0;
+    //     } else if chunks[prev..].len() < chunk_size {
+    //         vec.push(chunks[prev..].join(" "));
+    //         break;
+    //     } else {
+    //         next = next + 1;
+    //     }
+    // }
+
+    let mut i = 0;
+
+    while i < chunks.len() {
+        let words = {
+            if i + chunk_size >= chunks.len() {
+                chunks[i..].join(" ")
+            } else {
+                chunks[i..i + chunk_size].join(" ")
+            }
+        };
+
+        vec.push(words);
+        i = i + chunk_size;
     }
+
     vec
 }
 
