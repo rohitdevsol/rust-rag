@@ -20,24 +20,16 @@ pub fn make_chunks(file: String, chunk_size: usize) -> Vec<String> {
     vec
 }
 
-pub fn chunks_to_embeddings(chunks: &Vec<String>) -> Vec<Vec<f32>> {
+pub fn chunks_to_embeddings(chunks: &Vec<String>) -> Result<Vec<Vec<f32>>, fastembed::Error> {
     println!("Loading embedding model...");
 
-    let mut model =
-        TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2)).unwrap();
-
-    println!("Embedding model loaded!");
-    let embeddings = model.embed(chunks, None).unwrap();
-
-    println!("Embeddings generated!");
-    embeddings
+    TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
+        .and_then(|mut m| m.embed(chunks, None))
 }
 
-pub fn query_to_embeddings(query: String) -> Vec<f32> {
-    let mut model =
-        TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2)).unwrap();
-
-    model.embed(vec![query], None).unwrap().swap_remove(0)
+pub fn query_to_embeddings(query: String) -> Result<Vec<f32>, fastembed::Error> {
+    TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
+        .and_then(|mut m| Ok(m.embed(vec![query], None)?.swap_remove(0)))
 }
 
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
@@ -75,7 +67,7 @@ pub fn test_embeddings_from_chunks() {
 
     let embeddings = chunks_to_embeddings(&chunks);
 
-    for embedding in embeddings {
+    for embedding in embeddings.unwrap() {
         println!("Dimensions: {}", embedding.len());
     }
 }

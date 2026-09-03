@@ -1,12 +1,16 @@
 use std::io::{self, Write};
+use std::result::Result::Ok;
 
 use naive_rag::{chunks_to_embeddings, cosine_similarity, make_chunks, query_to_embeddings};
-fn main() {
+fn main() -> anyhow::Result<()> {
     let file = std::fs::read_to_string("./document.txt").unwrap();
 
-    let chunks = make_chunks(file, 50);
+    let chunks = make_chunks(file, 100);
 
-    let embeddings = chunks_to_embeddings(&chunks);
+    let embeddings = match chunks_to_embeddings(&chunks) {
+        Ok(v) => v,
+        Err(e) => return Err(e.into()),
+    };
 
     print!("Enter your query: ");
     io::stdout().flush().unwrap();
@@ -15,7 +19,10 @@ fn main() {
 
     io::stdin().read_line(&mut query).unwrap();
 
-    let query_embedding = query_to_embeddings(query);
+    let query_embedding = match query_to_embeddings(query) {
+        Ok(v) => v,
+        Err(e) => return Err(e.into()),
+    };
 
     let mut res: Vec<(f32, String)> = Vec::new();
 
@@ -33,4 +40,5 @@ fn main() {
         println!("----------------");
         println!("                ");
     }
+    Ok(())
 }
