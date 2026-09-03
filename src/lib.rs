@@ -1,25 +1,11 @@
 use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 
-pub fn make_chunks(file: String, chunk_size: usize) -> Vec<String> {
+pub fn make_chunks(file: String, chunk_size: usize, overlap: usize) -> Vec<String> {
+    assert!(chunk_size > 0);
+
     let mut vec = Vec::new();
 
     let chunks: Vec<String> = file.split_whitespace().map(|it| it.to_string()).collect();
-
-    // let mut prev = 0;
-    // let mut next = 0;
-
-    // while chunks[prev..].len() > 0 {
-    //     if next >= chunk_size {
-    //         vec.push(chunks[prev..prev + next].join(" "));
-    //         prev = prev + next;
-    //         next = 0;
-    //     } else if chunks[prev..].len() < chunk_size {
-    //         vec.push(chunks[prev..].join(" "));
-    //         break;
-    //     } else {
-    //         next = next + 1;
-    //     }
-    // }
 
     let mut i = 0;
 
@@ -33,7 +19,7 @@ pub fn make_chunks(file: String, chunk_size: usize) -> Vec<String> {
         };
 
         vec.push(words);
-        i = i + chunk_size;
+        i += chunk_size - overlap
     }
 
     vec
@@ -72,7 +58,7 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 pub fn test_string_chunking() {
     let st = String::from("Hello how are you doing hope you are doing fine yo");
 
-    let chunks = make_chunks(st, 5);
+    let chunks = make_chunks(st, 5, 2);
 
     for chunk in chunks {
         println!("{}", chunk);
@@ -82,7 +68,7 @@ pub fn test_string_chunking() {
 #[test]
 pub fn test_embeddings_from_chunks() {
     let st = String::from("Hello how are you doing hope you are doing fine");
-    let chunks = make_chunks(st, 12);
+    let chunks = make_chunks(st, 12, 2);
 
     let embeddings = chunks_to_embeddings(&chunks);
 

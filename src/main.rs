@@ -5,7 +5,7 @@ use naive_rag::{chunks_to_embeddings, cosine_similarity, make_chunks, query_to_e
 fn main() -> anyhow::Result<()> {
     let file = std::fs::read_to_string("./document.txt").unwrap();
 
-    let chunks = make_chunks(file, 100);
+    let chunks = make_chunks(file, 100, 2);
 
     let embeddings = match chunks_to_embeddings(&chunks) {
         Ok(v) => v,
