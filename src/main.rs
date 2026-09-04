@@ -2,7 +2,9 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use serde_json::json;
 use std::io::{self, Write};
 
-use naive_rag::{chunks_to_embeddings, cosine_similarity, make_chunks, query_to_embeddings};
+use naive_rag::{
+    assign_id, chunks_to_embeddings, cosine_similarity, make_chunks, query_to_embeddings,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -11,7 +13,8 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let api_key = std::env::var("GEMINI_API_KEY").unwrap();
 
-    let chunks = make_chunks(file, 50, 2);
+    let mut chunks = make_chunks(file, 50, 2);
+    let chunks = assign_id(&mut chunks);
 
     let embeddings = match chunks_to_embeddings(&chunks) {
         Ok(v) => v,

@@ -25,6 +25,14 @@ pub fn make_chunks(file: String, chunk_size: usize, overlap: usize) -> Vec<Strin
     vec
 }
 
+pub fn assign_id(chunks: &mut Vec<String>) -> Vec<String> {
+    chunks
+        .into_iter()
+        .enumerate()
+        .map(|(idx, c)| format!("{idx}: {c}"))
+        .collect()
+}
+
 pub fn chunks_to_embeddings(chunks: &Vec<String>) -> Result<Vec<Vec<f32>>, fastembed::Error> {
     println!("Loading embedding model...");
 
