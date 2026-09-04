@@ -1,10 +1,10 @@
+use naive_rag::{
+    chunks::{Chunk, chunks_to_embeddings, make_chunks},
+    cosine_similarity, query_to_embeddings,
+};
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde_json::json;
 use std::io::{self, Write};
-
-use naive_rag::{
-    assign_id, chunks_to_embeddings, cosine_similarity, make_chunks, query_to_embeddings,
-};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -13,8 +13,7 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let api_key = std::env::var("GEMINI_API_KEY").unwrap();
 
-    let mut chunks = make_chunks(file, 50, 2);
-    let chunks = assign_id(&mut chunks);
+    let chunks = make_chunks(file, 50, 2);
 
     let embeddings = match chunks_to_embeddings(&chunks) {
         Ok(v) => v,
@@ -33,18 +32,19 @@ async fn main() -> anyhow::Result<()> {
         Err(e) => return Err(e.into()),
     };
 
-    let mut res: Vec<(f32, String)> = Vec::new();
+    let mut res: Vec<(f32, Chunk)> = Vec::new();
 
-    for (chunk, embedding) in chunks.iter().zip(embeddings.iter()) {
+    for (chunk, embedding) in chunks.into_iter().zip(embeddings.iter()) {
         let score = cosine_similarity(&query_embedding, &embedding);
-        res.push((score, chunk.clone()));
+        res.push((score, chunk));
     }
 
     res.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
 
     for record in res.iter().take(3) {
         println!("Score: {}", record.0);
-        println!("Chunk: {}", record.1);
+        println!("Chunk ID: {}", record.1.id);
+        println!("Text: {}", record.1.text);
         println!("----------------");
         println!("                ");
     }
@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
     let context = res
         .iter()
         .take(3)
-        .map(|(_, chunk)| chunk.as_str())
+        .map(|(_, chunk)| chunk.text.as_str())
         .collect::<Vec<_>>()
         .join("\n\n---\n\n");
 

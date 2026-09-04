@@ -1,44 +1,5 @@
 use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
-
-pub fn make_chunks(file: String, chunk_size: usize, overlap: usize) -> Vec<String> {
-    assert!(chunk_size > 0);
-
-    let mut vec = Vec::new();
-
-    let chunks: Vec<String> = file.split_whitespace().map(|it| it.to_string()).collect();
-
-    let mut i = 0;
-
-    while i < chunks.len() {
-        let words = {
-            if i + chunk_size >= chunks.len() {
-                chunks[i..].join(" ")
-            } else {
-                chunks[i..i + chunk_size].join(" ")
-            }
-        };
-
-        vec.push(words);
-        i += chunk_size - overlap
-    }
-
-    vec
-}
-
-pub fn assign_id(chunks: &mut Vec<String>) -> Vec<String> {
-    chunks
-        .into_iter()
-        .enumerate()
-        .map(|(idx, c)| format!("{idx}: {c}"))
-        .collect()
-}
-
-pub fn chunks_to_embeddings(chunks: &Vec<String>) -> Result<Vec<Vec<f32>>, fastembed::Error> {
-    println!("Loading embedding model...");
-
-    TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
-        .and_then(|mut m| m.embed(chunks, None))
-}
+pub mod chunks;
 
 pub fn query_to_embeddings(query: &String) -> Result<Vec<f32>, fastembed::Error> {
     TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
@@ -62,34 +23,40 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 }
 
 #[cfg(test)]
-#[test]
-pub fn test_string_chunking() {
-    let st = String::from("Hello how are you doing hope you are doing fine yo");
+mod test {
 
-    let chunks = make_chunks(st, 5, 2);
+    use super::*;
+    use crate::chunks::{chunks_to_embeddings, make_chunks};
 
-    for chunk in chunks {
-        println!("{}", chunk);
+    #[test]
+    pub fn test_string_chunking() {
+        let st = String::from("Hello how are you doing hope you are doing fine yo");
+
+        let chunks = make_chunks(st, 5, 2);
+
+        for chunk in chunks {
+            println!("{:?}", chunk);
+        }
     }
-}
 
-#[test]
-pub fn test_embeddings_from_chunks() {
-    let st = String::from("Hello how are you doing hope you are doing fine");
-    let chunks = make_chunks(st, 12, 2);
+    #[test]
+    pub fn test_embeddings_from_chunks() {
+        let st = String::from("Hello how are you doing hope you are doing fine");
+        let chunks = make_chunks(st, 12, 2);
 
-    let embeddings = chunks_to_embeddings(&chunks);
+        let embeddings = chunks_to_embeddings(&chunks);
 
-    for embedding in embeddings.unwrap() {
-        println!("Dimensions: {}", embedding.len());
+        for embedding in embeddings.unwrap() {
+            println!("Dimensions: {}", embedding.len());
+        }
     }
-}
 
-#[test]
-pub fn test_cosine_smimilarity() {
-    let a = vec![1.0, 0.0];
-    let b = vec![0.0, 0.0];
+    #[test]
+    pub fn test_cosine_smimilarity() {
+        let a = vec![1.0, 0.0];
+        let b = vec![0.0, 0.0];
 
-    let score = cosine_similarity(&a, &b);
-    println!("Score is: {score}");
+        let score = cosine_similarity(&a, &b);
+        println!("Score is: {score}");
+    }
 }
