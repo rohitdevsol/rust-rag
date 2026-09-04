@@ -32,9 +32,9 @@ pub fn chunks_to_embeddings(chunks: &Vec<String>) -> Result<Vec<Vec<f32>>, faste
         .and_then(|mut m| m.embed(chunks, None))
 }
 
-pub fn query_to_embeddings(query: String) -> Result<Vec<f32>, fastembed::Error> {
+pub fn query_to_embeddings(query: &String) -> Result<Vec<f32>, fastembed::Error> {
     TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
-        .and_then(|mut m| Ok(m.embed(vec![query], None)?.swap_remove(0)))
+        .and_then(|mut m| Ok(m.embed(vec![query], None)?.remove(0)))
 }
 
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {

@@ -1,11 +1,17 @@
+use reqwest::header::{HeaderMap, HeaderValue};
+use serde_json::json;
 use std::io::{self, Write};
-use std::result::Result::Ok;
 
 use naive_rag::{chunks_to_embeddings, cosine_similarity, make_chunks, query_to_embeddings};
-fn main() -> anyhow::Result<()> {
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let file = std::fs::read_to_string("./document.txt").unwrap();
 
-    let chunks = make_chunks(file, 100, 2);
+    dotenvy::dotenv().ok();
+    let api_key = std::env::var("GEMINI_API_KEY").unwrap();
+
+    let chunks = make_chunks(file, 50, 2);
 
     let embeddings = match chunks_to_embeddings(&chunks) {
         Ok(v) => v,
@@ -19,7 +25,7 @@ fn main() -> anyhow::Result<()> {
 
     io::stdin().read_line(&mut query).unwrap();
 
-    let query_embedding = match query_to_embeddings(query) {
+    let query_embedding = match query_to_embeddings(&query) {
         Ok(v) => v,
         Err(e) => return Err(e.into()),
     };
@@ -29,7 +35,6 @@ fn main() -> anyhow::Result<()> {
     for (chunk, embedding) in chunks.iter().zip(embeddings.iter()) {
         let score = cosine_similarity(&query_embedding, &embedding);
         res.push((score, chunk.clone()));
-        // println!("Score is {}", score)
     }
 
     res.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
@@ -40,5 +45,50 @@ fn main() -> anyhow::Result<()> {
         println!("----------------");
         println!("                ");
     }
+
+    let client = reqwest::Client::builder().use_native_tls().build().unwrap();
+
+    let context = res
+        .iter()
+        .take(3)
+        .map(|(_, chunk)| chunk.as_str())
+        .collect::<Vec<_>>()
+        .join("\n\n---\n\n");
+
+    let input = format!(
+        r#"
+            Answer the user's question using ONLY the provided context.
+
+            Context:
+            {context}
+
+            Question:
+            {query}
+
+            Answer briefly.
+            "#
+    );
+
+    let mut headers: HeaderMap<HeaderValue> = HeaderMap::new();
+    headers.insert("x-goog-api-key", HeaderValue::from_str(&api_key).unwrap());
+    headers.insert("Content-Type", HeaderValue::from_static("application/json"));
+    headers.insert("Api-Revision", HeaderValue::from_static("2026-05-20"));
+
+    let response = client
+        .post("https://generativelanguage.googleapis.com/v1beta/interactions")
+        .headers(headers)
+        .json(&json!({
+        "model": "gemini-3.1-flash-lite",
+        "input": input
+        }))
+        .send()
+        .await
+        .expect("Request to GEMINI failed");
+
+    println!("Status: {}", response.status());
+
+    let body = response.text().await?;
+    eprintln!("{:#}", body);
+
     Ok(())
 }
