@@ -1,3 +1,4 @@
+use anyhow::Error;
 use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 
 #[derive(Debug)]
@@ -12,9 +13,16 @@ impl Chunk {
     }
 }
 
-pub fn make_chunks(file: String, chunk_size: usize, overlap: usize) -> Vec<Chunk> {
-    assert!(chunk_size > 0);
-    assert!(overlap < chunk_size);
+pub fn make_chunks(file: String, chunk_size: usize, overlap: usize) -> anyhow::Result<Vec<Chunk>> {
+    if chunk_size <= 0 {
+        return Err(Error::msg("Invalid Chunk size"));
+    }
+
+    if overlap >= chunk_size {
+        return Err(Error::msg(
+            "Overlap can not be more than or equal to Chunk size",
+        ));
+    }
 
     let mut vec = Vec::new();
 
@@ -35,10 +43,11 @@ pub fn make_chunks(file: String, chunk_size: usize, overlap: usize) -> Vec<Chunk
         i += chunk_size - overlap
     }
 
-    vec.into_iter()
+    Ok(vec
+        .into_iter()
         .enumerate()
         .map(|(id, chunk)| Chunk::new(id, chunk))
-        .collect()
+        .collect())
 }
 
 pub fn chunks_to_embeddings(chunks: &Vec<Chunk>) -> Result<Vec<Vec<f32>>, fastembed::Error> {

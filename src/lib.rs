@@ -1,5 +1,6 @@
 use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 pub mod chunks;
+pub mod llm;
 
 pub fn query_to_embeddings(query: &String) -> Result<Vec<f32>, fastembed::Error> {
     TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
@@ -25,30 +26,34 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 #[cfg(test)]
 mod test {
 
+    use anyhow::Ok;
+
     use super::*;
     use crate::chunks::{chunks_to_embeddings, make_chunks};
 
     #[test]
-    pub fn test_string_chunking() {
+    pub fn test_string_chunking() -> anyhow::Result<()> {
         let st = String::from("Hello how are you doing hope you are doing fine yo");
 
-        let chunks = make_chunks(st, 5, 2);
+        let chunks = make_chunks(st, 5, 2)?;
 
         for chunk in chunks {
             println!("{:?}", chunk);
         }
+        Ok(())
     }
 
     #[test]
-    pub fn test_embeddings_from_chunks() {
+    pub fn test_embeddings_from_chunks() -> anyhow::Result<()> {
         let st = String::from("Hello how are you doing hope you are doing fine");
-        let chunks = make_chunks(st, 12, 2);
+        let chunks = make_chunks(st, 12, 2)?;
 
         let embeddings = chunks_to_embeddings(&chunks);
 
         for embedding in embeddings.unwrap() {
             println!("Dimensions: {}", embedding.len());
         }
+        Ok(())
     }
 
     #[test]

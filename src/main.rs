@@ -1,9 +1,8 @@
 use naive_rag::{
     chunks::{Chunk, chunks_to_embeddings, make_chunks},
-    cosine_similarity, query_to_embeddings,
+    cosine_similarity, llm, query_to_embeddings,
 };
 use reqwest::header::{HeaderMap, HeaderValue};
-use serde_json::json;
 use std::io::{self, Write};
 
 #[tokio::main]
@@ -13,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let api_key = std::env::var("GEMINI_API_KEY").unwrap();
 
-    let chunks = make_chunks(file, 50, 2);
+    let chunks = make_chunks(file, 50, 2)?;
 
     let embeddings = match chunks_to_embeddings(&chunks) {
         Ok(v) => v,
@@ -49,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
         println!("                ");
     }
 
-    let client = reqwest::Client::builder().use_native_tls().build().unwrap();
+    let client = llm::build_req_client().unwrap();
 
     let context = res
         .iter()
@@ -61,13 +60,10 @@ async fn main() -> anyhow::Result<()> {
     let input = format!(
         r#"
             Answer the user's question using ONLY the provided context.
-
             Context:
             {context}
-
             Question:
             {query}
-
             Answer briefly.
             "#
     );
@@ -77,16 +73,14 @@ async fn main() -> anyhow::Result<()> {
     headers.insert("Content-Type", HeaderValue::from_static("application/json"));
     headers.insert("Api-Revision", HeaderValue::from_static("2026-05-20"));
 
-    let response = client
-        .post("https://generativelanguage.googleapis.com/v1beta/interactions")
-        .headers(headers)
-        .json(&json!({
-        "model": "gemini-3.1-flash-lite",
-        "input": input
-        }))
-        .send()
-        .await
-        .expect("Request to GEMINI failed");
+    let response = llm::new_request(
+        client,
+        llm::LLMProvider::GEMINI,
+        HeaderMap::from(headers),
+        &input,
+    )
+    .await
+    .unwrap();
 
     println!("Status: {}", response.status());
 
