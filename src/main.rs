@@ -1,9 +1,12 @@
+use diesel::prelude::*;
+use naive_rag::llm;
+use naive_rag::models::ChunkRow;
 use naive_rag::{
-    chunks::{Chunk, chunks_to_embeddings, make_chunks},
-    cosine_similarity,
     db::establish_connection,
-    llm, query_to_embeddings,
+    embed::{FastEmbedLocal, make_chunks},
+    schema::chunks,
 };
+use pgvector::VectorExpressionMethods;
 use reqwest::header::{HeaderMap, HeaderValue};
 use std::io::{self, Write};
 
@@ -18,15 +21,16 @@ async fn main() -> anyhow::Result<()> {
 
     println!("Connected to the database");
 
-    /* */
     let api_key = std::env::var("GEMINI_API_KEY").unwrap();
 
     let chunks = make_chunks(file, 50, 2)?;
 
-    let embeddings = match chunks_to_embeddings(&chunks) {
-        Ok(v) => v,
-        Err(e) => return Err(e.into()),
-    };
+    let mut embedder = FastEmbedLocal::new().unwrap();
+    let new_chunks = embedder.embed_multi(&chunks).unwrap();
+
+    diesel::insert_into(chunks::table)
+        .values(&new_chunks)
+        .execute(&mut connection)?;
 
     print!("Enter your query: ");
     io::stdout().flush().unwrap();
@@ -35,34 +39,25 @@ async fn main() -> anyhow::Result<()> {
 
     io::stdin().read_line(&mut query).unwrap();
 
-    let query_embedding = match query_to_embeddings(&query) {
-        Ok(v) => v,
-        Err(e) => return Err(e.into()),
-    };
+    let query_vec = embedder.embed_single(&query).unwrap();
 
-    let mut res: Vec<(f32, Chunk)> = Vec::new();
+    let results = chunks::table
+        .select(ChunkRow::as_select())
+        .order(chunks::embedding.cosine_distance(query_vec))
+        .limit(3)
+        .load(&mut connection)?;
 
-    for (chunk, embedding) in chunks.into_iter().zip(embeddings.iter()) {
-        let score = cosine_similarity(&query_embedding, &embedding);
-        res.push((score, chunk));
-    }
-
-    res.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
-
-    for record in res.iter().take(3) {
-        println!("Score: {}", record.0);
-        println!("Chunk ID: {}", record.1.id);
-        println!("Text: {}", record.1.text);
+    for chunk in results.iter() {
+        println!("ID: {}", chunk.id);
+        println!("Text: {}", chunk.text);
         println!("----------------");
-        println!("                ");
     }
 
     let client = llm::build_req_client().unwrap();
 
-    let context = res
+    let context = results
         .iter()
-        .take(3)
-        .map(|(_, chunk)| chunk.text.as_str())
+        .map(|chunk| chunk.text.as_str())
         .collect::<Vec<_>>()
         .join("\n\n---\n\n");
 
@@ -94,7 +89,7 @@ async fn main() -> anyhow::Result<()> {
     println!("Status: {}", response.status());
 
     let body = response.text().await?;
-    eprintln!("{:#}", body);
+    eprintln!("{:#?}", body);
 
     Ok(())
 }
