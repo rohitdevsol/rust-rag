@@ -3,7 +3,9 @@
 
 [print_schema]
 file = "src/schema.rs"
-import_types = ["pgvector::sql_types::*"]
+import_types = ["diesel::sql_types::*", "pgvector::sql_types::*"]
+
+except_custom_type_definitions = ["Vector"]
 
 [migrations_directory]
 dir = "migrations"
