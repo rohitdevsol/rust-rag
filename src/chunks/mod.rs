@@ -50,7 +50,7 @@ pub fn make_chunks(file: String, chunk_size: usize, overlap: usize) -> anyhow::R
         .collect())
 }
 
-pub fn chunks_to_embeddings(chunks: &Vec<Chunk>) -> Result<Vec<Vec<f32>>, fastembed::Error> {
+pub fn chunks_to_embeddings(chunks: &[Chunk]) -> Result<Vec<Vec<f32>>, fastembed::Error> {
     println!("Loading embedding model...");
 
     let raw_chunks: Vec<String> = chunks.iter().map(|h| format!("{}", h.text)).collect();

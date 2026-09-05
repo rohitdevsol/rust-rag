@@ -1,6 +1,7 @@
 use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 pub mod chunks;
 pub mod llm;
+pub mod schema;
 
 pub fn query_to_embeddings(query: &String) -> Result<Vec<f32>, fastembed::Error> {
     TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))

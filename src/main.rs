@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
 
     let input = format!(
         r#"
-            Answer the user's question using ONLY the provided context.
+            Answer the user's question using ONLY the provided context and do not think much.
             Context:
             {context}
             Question:
