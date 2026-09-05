@@ -1,70 +1,72 @@
-use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
-pub mod chunks;
+// use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 pub mod db;
+pub mod embed;
 pub mod llm;
 pub mod models;
 pub mod schema;
 
-pub fn query_to_embeddings(query: &String) -> Result<Vec<f32>, fastembed::Error> {
-    TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
-        .and_then(|mut m| Ok(m.embed(vec![query], None)?.remove(0)))
-}
+// THIS CODE WAS USED BEFORE PGVECTOR
 
-pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    assert_eq!(a.len(), b.len());
+// pub fn query_to_embeddings(query: &String) -> Result<Vec<f32>, fastembed::Error> {
+//     TextEmbedding::try_new(TextInitOptions::new(EmbeddingModel::AllMiniLML6V2))
+//         .and_then(|mut m| Ok(m.embed(vec![query], None)?.remove(0)))
+// }
 
-    let mut dot_product = 0.0;
-    let mut magnitude_a = 0.0;
-    let mut magnitude_b = 0.0;
+// pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+//     assert_eq!(a.len(), b.len());
 
-    for i in 0..a.len() {
-        dot_product += a[i] * b[i];
-        magnitude_a += a[i] * a[i];
-        magnitude_b += b[i] * b[i];
-    }
+//     let mut dot_product = 0.0;
+//     let mut magnitude_a = 0.0;
+//     let mut magnitude_b = 0.0;
 
-    dot_product / (magnitude_a.sqrt()) * (magnitude_b.sqrt())
-}
+//     for i in 0..a.len() {
+//         dot_product += a[i] * b[i];
+//         magnitude_a += a[i] * a[i];
+//         magnitude_b += b[i] * b[i];
+//     }
 
-#[cfg(test)]
-mod test {
+//     dot_product / (magnitude_a.sqrt()) * (magnitude_b.sqrt())
+// }
 
-    use anyhow::Ok;
+// #[cfg(test)]
+// mod test {
 
-    use super::*;
-    use crate::chunks::{chunks_to_embeddings, make_chunks};
+//     use anyhow::Ok;
 
-    #[test]
-    pub fn test_string_chunking() -> anyhow::Result<()> {
-        let st = String::from("Hello how are you doing hope you are doing fine yo");
+//     use super::*;
+//     use crate::chunks::{chunks_to_embeddings, make_chunks};
 
-        let chunks = make_chunks(st, 5, 2)?;
+//     #[test]
+//     pub fn test_string_chunking() -> anyhow::Result<()> {
+//         let st = String::from("Hello how are you doing hope you are doing fine yo");
 
-        for chunk in chunks {
-            println!("{:?}", chunk);
-        }
-        Ok(())
-    }
+//         let chunks = make_chunks(st, 5, 2)?;
 
-    #[test]
-    pub fn test_embeddings_from_chunks() -> anyhow::Result<()> {
-        let st = String::from("Hello how are you doing hope you are doing fine");
-        let chunks = make_chunks(st, 12, 2)?;
+//         for chunk in chunks {
+//             println!("{:?}", chunk);
+//         }
+//         Ok(())
+//     }
 
-        let embeddings = chunks_to_embeddings(&chunks);
+//     #[test]
+//     pub fn test_embeddings_from_chunks() -> anyhow::Result<()> {
+//         let st = String::from("Hello how are you doing hope you are doing fine");
+//         let chunks = make_chunks(st, 12, 2)?;
 
-        for embedding in embeddings.unwrap() {
-            println!("Dimensions: {}", embedding.len());
-        }
-        Ok(())
-    }
+//         let embeddings = chunks_to_embeddings(&chunks);
 
-    #[test]
-    pub fn test_cosine_smimilarity() {
-        let a = vec![1.0, 0.0];
-        let b = vec![0.0, 0.0];
+//         for embedding in embeddings.unwrap() {
+//             println!("Dimensions: {}", embedding.len());
+//         }
+//         Ok(())
+//     }
 
-        let score = cosine_similarity(&a, &b);
-        println!("Score is: {score}");
-    }
-}
+//     #[test]
+//     pub fn test_cosine_smimilarity() {
+//         let a = vec![1.0, 0.0];
+//         let b = vec![0.0, 0.0];
+
+//         let score = cosine_similarity(&a, &b);
+//         println!("Score is: {score}");
+//     }
+// }
