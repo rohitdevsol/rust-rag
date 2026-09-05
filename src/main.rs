@@ -1,6 +1,8 @@
 use naive_rag::{
     chunks::{Chunk, chunks_to_embeddings, make_chunks},
-    cosine_similarity, llm, query_to_embeddings,
+    cosine_similarity,
+    db::establish_connection,
+    llm, query_to_embeddings,
 };
 use reqwest::header::{HeaderMap, HeaderValue};
 use std::io::{self, Write};
@@ -10,6 +12,13 @@ async fn main() -> anyhow::Result<()> {
     let file = std::fs::read_to_string("./document.txt").unwrap();
 
     dotenvy::dotenv().ok();
+
+    let mut connection = establish_connection();
+    let _ = &mut connection;
+
+    println!("Connected to the database");
+
+    /* */
     let api_key = std::env::var("GEMINI_API_KEY").unwrap();
 
     let chunks = make_chunks(file, 50, 2)?;

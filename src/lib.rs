@@ -1,5 +1,6 @@
 use fastembed::{EmbeddingModel, TextEmbedding, TextInitOptions};
 pub mod chunks;
+pub mod db;
 pub mod llm;
 pub mod models;
 pub mod schema;
