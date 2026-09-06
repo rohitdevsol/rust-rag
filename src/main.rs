@@ -42,12 +42,16 @@ async fn main() -> anyhow::Result<()> {
     let query_vec = embedder.embed_single(&query).unwrap();
 
     let results = chunks::table
-        .select(ChunkRow::as_select())
+        .select((
+            ChunkRow::as_select(),
+            chunks::embedding.cosine_distance(query_vec.clone()),
+        ))
         .order(chunks::embedding.cosine_distance(query_vec))
         .limit(3)
-        .load(&mut connection)?;
+        .load::<(ChunkRow, f64)>(&mut connection)?;
 
-    for chunk in results.iter() {
+    for (chunk, distance) in results.iter() {
+        println!("Distance: {}", distance);
         println!("ID: {}", chunk.id);
         println!("Text: {}", chunk.text);
         println!("----------------");
@@ -57,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
 
     let context = results
         .iter()
-        .map(|chunk| chunk.text.as_str())
+        .map(|(chunk, _)| chunk.text.as_str())
         .collect::<Vec<_>>()
         .join("\n\n---\n\n");
 
