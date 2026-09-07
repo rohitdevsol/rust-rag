@@ -4,6 +4,7 @@ pub mod embed;
 pub mod llm;
 pub mod models;
 pub mod schema;
+pub mod utils;
 
 // THIS CODE WAS USED BEFORE PGVECTOR
 
