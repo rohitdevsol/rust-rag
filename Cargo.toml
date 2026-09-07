@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.104"
+bm25 = "2.3.2"
 diesel = {version = "2.3.13", features=["postgres"]}
 dotenvy = "0.15.7"
 fastembed = "6.0.2"
