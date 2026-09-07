@@ -1,10 +1,10 @@
 use diesel::prelude::*;
-use naive_rag::llm;
-use naive_rag::utils::{get_gemini_headers, retrive};
 use naive_rag::{
     db::establish_connection,
     embed::{FastEmbedLocal, make_chunks},
+    llm,
     schema::chunks,
+    utils::{get_gemini_headers, retrive},
 };
 
 use std::io::{self, Write};
@@ -32,6 +32,7 @@ async fn main() -> anyhow::Result<()> {
     io::stdout().flush().unwrap();
 
     let mut query = String::new();
+
     io::stdin().read_line(&mut query).unwrap();
 
     let query_vec = embedder.embed_single(&query).unwrap();
