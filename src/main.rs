@@ -4,6 +4,7 @@ use naive_rag::{
     db::establish_connection,
     embed::{BM25Retriever, FastEmbedLocal, make_chunks},
     llm,
+    rrf::rrf,
     schema::chunks,
     utils::{get_gemini_headers, retrive},
 };
@@ -13,6 +14,7 @@ use std::io::{self, Write};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
+
     let mut connection = establish_connection();
     println!("Connected to the database");
 
@@ -24,25 +26,14 @@ async fn main() -> anyhow::Result<()> {
 
     let mut embedder = FastEmbedLocal::new().unwrap();
 
-    // print!("Enter your query: ");
-    // io::stdout().flush().unwrap();
+    print!("Enter your query: ");
+    io::stdout().flush().unwrap();
+    let mut query = String::new();
+    io::stdin().read_line(&mut query).unwrap();
+    let query_vec = embedder.embed_single(&query).unwrap();
 
-    // let mut query = String::new();
-
-    // let query_vec = embedder.embed_single(&query).unwrap();
-
-    // io::stdin().read_line(&mut query).unwrap();
-
-    // let bm25 = BM25Retriever::new(chunks);
-
-    // let results = bm25.search(&query, 3);
-
-    // for (chunk, score) in results {
-    //     println!("Score: {score}");
-    //     println!("ID: {}", chunk.id);
-    //     println!("Text: {}", chunk.text);
-    //     println!("----------------");
-    // }
+    let bm25 = BM25Retriever::new(&chunks);
+    let bm25_ids = bm25.search(&query, 3);
 
     let new_chunks = embedder.embed_multi(&chunks).unwrap();
 
@@ -50,14 +41,13 @@ async fn main() -> anyhow::Result<()> {
         .values(&new_chunks)
         .execute(&mut connection)?;
 
-    // let results = retrive(&mut connection, query_vec)?;
+    let vector_results = retrive(&mut connection, query_vec)?;
+    let vector_ids: Vec<usize> = vector_results
+        .iter()
+        .map(|(chunk, _distance)| chunk.id as usize - 1)
+        .collect();
 
-    // for (chunk, distance) in results.iter() {
-    //     println!("Distance: {}", distance);
-    //     println!("ID: {}", chunk.id);
-    //     println!("Text: {}", chunk.text);
-    //     println!("----------------");
-    // }
+    let fused_ids = rrf(&bm25_ids, &vector_ids, 60);
 
     // let client = llm::build_req_client().unwrap();
 

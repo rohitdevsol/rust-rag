@@ -3,6 +3,7 @@ pub mod db;
 pub mod embed;
 pub mod llm;
 pub mod models;
+pub mod rrf;
 pub mod schema;
 pub mod utils;
 
