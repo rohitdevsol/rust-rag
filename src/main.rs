@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use naive_rag::{
     db::establish_connection,
     embed::{BM25Retriever, FastEmbedLocal, make_chunks},
-    llm,
+    llm::{self, LLMProvider},
     rrf::rrf,
     schema::chunks,
     utils::{get_gemini_headers, retrive},
@@ -61,7 +61,7 @@ async fn main() -> anyhow::Result<()> {
         .map(|&id| &chunks[id])
         .collect::<Vec<_>>();
 
-    let client = llm::build_req_client().unwrap();
+    let client = LLMProvider::build_req_client().unwrap();
 
     let context = results
         .iter()
@@ -80,9 +80,9 @@ async fn main() -> anyhow::Result<()> {
             "#
     );
 
-    let response = llm::new_request(
+    let response = LLMProvider::new_request(
+        LLMProvider::GEMINI,
         client,
-        llm::LLMProvider::GEMINI,
         get_gemini_headers(&api_key),
         &input,
     )

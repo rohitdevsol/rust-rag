@@ -8,36 +8,38 @@ pub enum LLMProvider {
     OPENAI,
 }
 
-pub async fn new_request(
-    client: Client,
-    provider: LLMProvider,
-    headers: HeaderMap,
-    input: &String,
-) -> anyhow::Result<Response> {
-    let model = {
-        if provider == LLMProvider::GEMINI {
-            "gemini-3.1-flash-lite"
-        } else {
-            "none"
-        }
-    };
+impl LLMProvider {
+    pub fn build_req_client() -> anyhow::Result<Client> {
+        Ok(reqwest::Client::builder()
+            .use_native_tls()
+            .build()
+            .expect("Failed to build LLM Request Client"))
+    }
 
-    //will handle url based config later
-    Ok(client
-        .post("https://generativelanguage.googleapis.com/v1beta/interactions")
-        .headers(headers)
-        .json(&json!({
-        "model":model,
-        "input": input
-        }))
-        .send()
-        .await
-        .expect("Request to GEMINI failed"))
-}
+    pub async fn new_request(
+        self,
+        client: Client,
+        headers: HeaderMap,
+        input: &String,
+    ) -> anyhow::Result<Response> {
+        let model = {
+            if self == LLMProvider::GEMINI {
+                "gemini-3.1-flash-lite"
+            } else {
+                "none"
+            }
+        };
 
-pub fn build_req_client() -> anyhow::Result<Client> {
-    Ok(reqwest::Client::builder()
-        .use_native_tls()
-        .build()
-        .expect("Failed to build LLM Request Client"))
+        //will handle url based config later
+        Ok(client
+            .post("https://generativelanguage.googleapis.com/v1beta/interactions")
+            .headers(headers)
+            .json(&json!({
+            "model":model,
+            "input": input
+            }))
+            .send()
+            .await
+            .expect("Request to GEMINI failed"))
+    }
 }
